@@ -55,8 +55,8 @@ func (t *gcsFS) Stat(path string) (os.FileInfo, error) {
 	return fileInfo, nil
 }
 
-func (t *gcsFS) Read(ctx gocontext.Context, fileID string) (io.ReadCloser, error) {
-	obj := t.Client.Bucket(t.Bucket).Object(fileID)
+func (t *gcsFS) Read(ctx gocontext.Context, path string) (io.ReadCloser, error) {
+	obj := t.Client.Bucket(t.Bucket).Object(path)
 
 	reader, err := obj.NewReader(ctx)
 	if err != nil {

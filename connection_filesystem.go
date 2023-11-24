@@ -22,7 +22,7 @@ type Filesystem interface {
 
 type FilesystemRW interface {
 	Filesystem
-	Read(ctx gocontext.Context, fileID string) (io.ReadCloser, error)
+	Read(ctx gocontext.Context, path string) (io.ReadCloser, error)
 	Write(ctx gocontext.Context, path string, data io.Reader) (os.FileInfo, error)
 }
 

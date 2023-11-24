@@ -23,8 +23,8 @@ func NewSMBFS(server string, port, share string, auth connection.Authentication)
 	return &smbFS{SMBSession: session}, nil
 }
 
-func (s *smbFS) Read(ctx gocontext.Context, fileID string) (io.ReadCloser, error) {
-	return s.SMBSession.Share.Open(fileID)
+func (s *smbFS) Read(ctx gocontext.Context, path string) (io.ReadCloser, error) {
+	return s.SMBSession.Share.Open(path)
 }
 
 func (s *smbFS) Write(ctx gocontext.Context, path string, data io.Reader) (os.FileInfo, error) {

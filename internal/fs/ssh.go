@@ -26,8 +26,8 @@ func NewSSHFS(host, user, password string) (*sshFS, error) {
 	}, nil
 }
 
-func (s *sshFS) Read(ctx gocontext.Context, fileID string) (io.ReadCloser, error) {
-	return s.Client.Open(fileID)
+func (s *sshFS) Read(ctx gocontext.Context, path string) (io.ReadCloser, error) {
+	return s.Client.Open(path)
 }
 
 func (s *sshFS) Write(ctx gocontext.Context, path string, data io.Reader) (os.FileInfo, error) {

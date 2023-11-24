@@ -10,6 +10,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.44.0
 	github.com/flanksource/commons v1.17.1
 	github.com/flanksource/duty v1.0.226
+	github.com/gabriel-vasile/mimetype v1.4.3
 	github.com/henvic/httpretty v0.1.3
 	github.com/hirochachacha/go-smb2 v1.1.0
 	github.com/pkg/sftp v1.13.6
