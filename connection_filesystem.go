@@ -32,7 +32,7 @@ func GetFSForConnection(ctx context.Context, c models.Connection) (FilesystemRW,
 		path := c.Properties["path"]
 		return fs.NewLocalFS(path), nil
 
-	case models.ConnectionTypeAWS:
+	case models.ConnectionTypeS3:
 		bucket := c.Properties["bucket"]
 		conn := connection.AWSConnection{
 			ConnectionName: c.ID.String(),

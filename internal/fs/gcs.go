@@ -2,6 +2,7 @@ package fs
 
 import (
 	gocontext "context"
+	"errors"
 	"io"
 	"os"
 	"strings"
@@ -10,6 +11,7 @@ import (
 	gcpUtil "github.com/flanksource/artifacts/clients/gcp"
 	"github.com/flanksource/duty/connection"
 	"github.com/flanksource/duty/context"
+	"google.golang.org/api/iterator"
 )
 
 // gcsFS implements FilesystemRW for Google Cloud Storage
@@ -36,9 +38,30 @@ func (t *gcsFS) Close() error {
 	return t.Client.Close()
 }
 
-// TODO: implement
 func (t *gcsFS) ReadDir(name string) ([]os.FileInfo, error) {
-	return nil, nil
+	bucket := t.Client.Bucket(t.Bucket)
+	objs := bucket.Objects(gocontext.TODO(), &gcs.Query{Prefix: name})
+
+	var output []os.FileInfo
+	for {
+		obj, err := objs.Next()
+		if err != nil {
+			if errors.Is(err, iterator.Done) {
+				break
+			}
+
+			return nil, err
+		}
+
+		if obj == nil {
+			break
+		}
+
+		file := gcpUtil.GCSFileInfo{Object: obj}
+		output = append(output, file)
+	}
+
+	return output, nil
 }
 
 func (t *gcsFS) Stat(path string) (os.FileInfo, error) {

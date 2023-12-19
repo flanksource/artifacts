@@ -22,7 +22,22 @@ func (t *localFS) Close() error {
 }
 
 func (t *localFS) ReadDir(name string) ([]os.FileInfo, error) {
-	return nil, nil // TODO:
+	entries, err := os.ReadDir(filepath.Join(t.base, name))
+	if err != nil {
+		return nil, err
+	}
+
+	output := make([]os.FileInfo, 0, len(entries))
+	for _, e := range entries {
+		info, err := e.Info()
+		if err != nil {
+			return nil, err
+		}
+
+		output = append(output, info)
+	}
+
+	return output, nil
 }
 
 func (t *localFS) Stat(name string) (os.FileInfo, error) {
