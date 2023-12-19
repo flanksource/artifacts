@@ -9,7 +9,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/credentials v1.16.4
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.44.0
 	github.com/flanksource/commons v1.17.1
-	github.com/flanksource/duty v1.0.226
+	github.com/flanksource/duty v1.0.242
 	github.com/gabriel-vasile/mimetype v1.4.3
 	github.com/henvic/httpretty v0.1.3
 	github.com/hirochachacha/go-smb2 v1.1.0
@@ -26,6 +26,7 @@ require (
 	github.com/AlekSi/pointer v1.2.0 // indirect
 	github.com/Masterminds/goutils v1.1.1 // indirect
 	github.com/Masterminds/semver/v3 v3.2.1 // indirect
+	github.com/RaveNoX/go-jsonmerge v1.0.0 // indirect
 	github.com/TomOnTime/utfutil v0.0.0-20230223141146-125e65197b36 // indirect
 	github.com/antlr/antlr4/runtime/Go/antlr/v4 v4.0.0-20230305170008-8188dc5388df // indirect
 	github.com/antonmedv/expr v1.15.3 // indirect
@@ -109,7 +110,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/monochromegane/go-gitignore v0.0.0-20200626010858-205db1a8cc00 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/ohler55/ojg v1.20.2 // indirect
+	github.com/ohler55/ojg v1.20.3 // indirect
 	github.com/onsi/ginkgo/v2 v2.12.0 // indirect
 	github.com/onsi/gomega v1.28.0 // indirect
 	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect

@@ -44,7 +44,8 @@ func (t *s3FS) Close() error {
 
 func (t *s3FS) ReadDir(name string) ([]os.FileInfo, error) {
 	req := &s3.ListObjectsInput{
-		Bucket: aws.String(name),
+		Bucket: aws.String(t.Bucket),
+		Prefix: aws.String(name),
 	}
 	resp, err := t.Client.ListObjects(gocontext.TODO(), req)
 	if err != nil {
