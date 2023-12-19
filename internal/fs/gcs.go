@@ -20,8 +20,8 @@ type gcsFS struct {
 	Bucket string
 }
 
-func NewGCSFS(ctx context.Context, bucket string, conn *connection.GCPConnection) (*gcsFS, error) {
-	cfg, err := gcpUtil.NewSession(ctx, conn)
+func NewGCSFS(ctx context.Context, bucket string, conn *connection.GCSConnection) (*gcsFS, error) {
+	cfg, err := gcpUtil.NewSession(ctx, &conn.GCPConnection)
 	if err != nil {
 		return nil, err
 	}

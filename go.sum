@@ -738,8 +738,6 @@ github.com/evanphx/json-patch v5.7.0+incompatible/go.mod h1:50XU6AFN0ol/bzJsmQLi
 github.com/fatih/color v1.7.0/go.mod h1:Zm6kSWBoL9eyXnKyktHP6abPY2pDugNf5KwzbycvMj4=
 github.com/flanksource/commons v1.17.1 h1:jd114sxRwe2VWcbG/PVVEAWsEkialL6eltbqFGANyuI=
 github.com/flanksource/commons v1.17.1/go.mod h1:RDdQI0/QYC4GzicbDaXIvBPjWuQWKLzX8/rFBbFjG5U=
-github.com/flanksource/duty v1.0.242 h1:EfGWtxhdTtDam7PzQuk42Wr7a3V+tMpxjdCNPCn5lXo=
-github.com/flanksource/duty v1.0.242/go.mod h1:tT+MmnSlSJMeBrFGzWDES/vKOW26g+y3i907/IJrd1s=
 github.com/flanksource/gomplate/v3 v3.20.4/go.mod h1:27BNWhzzSjDed1z8YShO6W+z6G9oZXuxfNFGd/iGSdc=
 github.com/flanksource/gomplate/v3 v3.20.25 h1:/5qsAzZMbwr0vQcosVAAeSqzJkS0rxJiGnqTDCYU/7M=
 github.com/flanksource/gomplate/v3 v3.20.25/go.mod h1:GKmptFMdr2LbOuqwQZrmo9a/UygyZ0pbXffks8MuYhE=

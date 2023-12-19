@@ -11,6 +11,7 @@ require (
 	github.com/flanksource/commons v1.17.1
 	github.com/flanksource/duty v1.0.242
 	github.com/gabriel-vasile/mimetype v1.4.3
+	github.com/google/uuid v1.4.0
 	github.com/henvic/httpretty v0.1.3
 	github.com/hirochachacha/go-smb2 v1.1.0
 	github.com/pkg/sftp v1.13.6
@@ -70,7 +71,6 @@ require (
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/s2a-go v0.1.7 // indirect
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
-	github.com/google/uuid v1.4.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.2 // indirect
 	github.com/googleapis/gax-go/v2 v2.12.0 // indirect
 	github.com/gosimple/slug v1.13.1 // indirect
@@ -174,3 +174,5 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
+
+replace github.com/flanksource/duty => ../duty
