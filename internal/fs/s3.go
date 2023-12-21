@@ -22,8 +22,8 @@ type s3FS struct {
 	Bucket string
 }
 
-func NewS3FS(ctx context.Context, bucket string, conn connection.AWSConnection) (*s3FS, error) {
-	cfg, err := awsUtil.NewSession(ctx, conn)
+func NewS3FS(ctx context.Context, bucket string, conn connection.S3Connection) (*s3FS, error) {
+	cfg, err := awsUtil.NewSession(ctx, conn.AWSConnection)
 	if err != nil {
 		return nil, err
 	}
