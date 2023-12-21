@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/url"
 	"os"
+	"strconv"
 
 	"github.com/flanksource/artifacts/internal/fs"
 	"github.com/google/uuid"
@@ -38,11 +39,20 @@ func GetFSForConnection(ctx context.Context, c models.Connection) (FilesystemRW,
 		if c.ID != uuid.Nil {
 			conn.ConnectionName = c.ID.String()
 		} else {
+			conn.Endpoint = c.URL
 			conn.AccessKey = types.EnvVar{ValueStatic: c.Username}
 			conn.SecretKey = types.EnvVar{ValueStatic: c.Password}
 			conn.SessionToken = types.EnvVar{ValueStatic: c.Username}
 			conn.Bucket = c.Properties["bucket"]
 			conn.Region = c.Properties["region"]
+			if val, ok := c.Properties["usePathStyle"]; ok {
+				if b, err := strconv.ParseBool(val); err == nil {
+					conn.UsePathStyle = b
+				}
+			}
+			if objectPath, ok := c.Properties["objectPath"]; ok {
+				conn.ObjectPath = objectPath
+			}
 		}
 
 		if err := conn.Populate(ctx); err != nil {
@@ -57,15 +67,15 @@ func GetFSForConnection(ctx context.Context, c models.Connection) (FilesystemRW,
 			conn.ConnectionName = c.ID.String()
 		} else {
 			conn.Credentials = &types.EnvVar{ValueStatic: c.Certificate}
-			conn.Endpoint = c.Properties["endpoint"]
-			conn.Bucket = c.Properties["endpoint"]
+			conn.Endpoint = c.URL
+			conn.Bucket = c.Properties["bucket"]
 		}
 
 		if err := conn.HydrateConnection(ctx); err != nil {
 			return nil, err
 		}
 
-		client, err := fs.NewGCSFS(ctx, conn.Bucket, &conn)
+		client, err := fs.NewGCSFS(ctx, conn.Bucket, conn)
 		if err != nil {
 			return nil, err
 		}
