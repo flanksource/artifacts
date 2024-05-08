@@ -12,7 +12,7 @@ func NewSession(ctx context.Context, conn *connection.GCPConnection) (*gcs.Clien
 	var client *gcs.Client
 	var err error
 	if !conn.Credentials.IsEmpty() {
-		credential, err := ctx.GetEnvValueFromCache(*conn.Credentials)
+		credential, err := ctx.GetEnvValueFromCache(*conn.Credentials, ctx.GetNamespace())
 		if err != nil {
 			return nil, err
 		}

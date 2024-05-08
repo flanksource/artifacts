@@ -51,11 +51,11 @@ func NewSession(ctx context.Context, conn connection.AWSConnection) (*aws.Config
 	cfg, err := config.LoadDefaultConfig(ctx, loadOptions...)
 
 	if !conn.AccessKey.IsEmpty() {
-		accessKey, err := ctx.GetEnvValueFromCache(conn.AccessKey)
+		accessKey, err := ctx.GetEnvValueFromCache(conn.AccessKey, ctx.GetNamespace())
 		if err != nil {
 			return nil, fmt.Errorf("could not parse EC2 access key: %v", err)
 		}
-		secretKey, err := ctx.GetEnvValueFromCache(conn.SecretKey)
+		secretKey, err := ctx.GetEnvValueFromCache(conn.SecretKey, ctx.GetNamespace())
 		if err != nil {
 			return nil, fmt.Errorf(fmt.Sprintf("Could not parse EC2 secret key: %v", err))
 		}

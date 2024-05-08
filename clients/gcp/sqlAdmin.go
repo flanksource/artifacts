@@ -12,7 +12,7 @@ func NewSQLAdmin(ctx context.Context, conn *connection.GCPConnection) (*sqladmin
 	var err error
 	var client *sqladmin.Service
 	if !conn.Credentials.IsEmpty() {
-		credential, err := ctx.GetEnvValueFromCache(*conn.Credentials)
+		credential, err := ctx.GetEnvValueFromCache(*conn.Credentials, ctx.GetNamespace())
 		if err != nil {
 			return nil, err
 		}
