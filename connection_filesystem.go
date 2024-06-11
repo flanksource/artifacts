@@ -96,7 +96,7 @@ func GetFSForConnection(ctx context.Context, c models.Connection) (FilesystemRW,
 	case models.ConnectionTypeSMB:
 		port := c.Properties["port"]
 		share := c.Properties["share"]
-		return fs.NewSMBFS(c.URL, port, share, connection.Authentication{
+		return fs.NewSMBFS(c.URL, port, share, types.Authentication{
 			Username: types.EnvVar{ValueStatic: c.Username},
 			Password: types.EnvVar{ValueStatic: c.Password},
 		})

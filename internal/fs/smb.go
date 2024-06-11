@@ -7,14 +7,14 @@ import (
 	"os"
 
 	"github.com/flanksource/artifacts/clients/smb"
-	"github.com/flanksource/duty/connection"
+	"github.com/flanksource/duty/types"
 )
 
 type smbFS struct {
 	*smb.SMBSession
 }
 
-func NewSMBFS(server string, port, share string, auth connection.Authentication) (*smbFS, error) {
+func NewSMBFS(server string, port, share string, auth types.Authentication) (*smbFS, error) {
 	session, err := smb.SMBConnect(server, port, share, auth)
 	if err != nil {
 		return nil, err
