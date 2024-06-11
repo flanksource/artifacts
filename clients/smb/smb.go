@@ -3,7 +3,7 @@ package smb
 import (
 	"net"
 
-	"github.com/flanksource/duty/connection"
+	"github.com/flanksource/duty/types"
 	"github.com/hirochachacha/go-smb2"
 )
 
@@ -13,7 +13,7 @@ type SMBSession struct {
 	*smb2.Share
 }
 
-func SMBConnect(server string, port, share string, auth connection.Authentication) (*SMBSession, error) {
+func SMBConnect(server string, port, share string, auth types.Authentication) (*SMBSession, error) {
 	var err error
 	var smb *SMBSession
 	server = server + ":" + port
