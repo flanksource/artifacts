@@ -42,11 +42,17 @@ func (t *s3FS) Close() error {
 	return nil // NOOP
 }
 
-func (t *s3FS) ReadDir(name string) ([]FileInfo, error) {
+func (t *s3FS) ReadDir(pattern string) ([]FileInfo, error) {
+	dir := filepath.Dir(pattern)
+	if dir == "." || dir == "**" {
+		dir = ""
+	}
+
 	req := &s3.ListObjectsInput{
 		Bucket: aws.String(t.Bucket),
-		Prefix: aws.String(name),
+		Prefix: aws.String(dir),
 	}
+
 	resp, err := t.Client.ListObjects(gocontext.TODO(), req)
 	if err != nil {
 		return nil, err
@@ -54,7 +60,19 @@ func (t *s3FS) ReadDir(name string) ([]FileInfo, error) {
 
 	var output []FileInfo
 	for _, r := range resp.Contents {
-		output = append(output, &awsUtil.S3FileInfo{Object: r})
+		name := strings.TrimPrefix(*r.Key, dir)
+		if dir != "" {
+			name = strings.TrimPrefix(name, "/")
+		}
+
+		match, err := filepath.Match(filepath.Base(pattern), name)
+		if err != nil {
+			return nil, err
+		}
+
+		if match {
+			output = append(output, &awsUtil.S3FileInfo{Object: r})
+		}
 	}
 
 	return output, nil
@@ -89,7 +107,6 @@ func (t *s3FS) Read(ctx gocontext.Context, key string) (io.ReadCloser, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer results.Body.Close()
 
 	return results.Body, nil
 }

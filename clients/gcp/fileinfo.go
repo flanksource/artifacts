@@ -36,5 +36,5 @@ func (obj GCSFileInfo) Sys() interface{} {
 }
 
 func (obj GCSFileInfo) FullPath() string {
-	return "" // TODO
+	return obj.Object.Name
 }

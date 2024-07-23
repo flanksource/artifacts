@@ -32,7 +32,7 @@ func (obj S3FileInfo) ModTime() time.Time {
 }
 
 func (obj S3FileInfo) FullPath() string {
-	return "" // TODO
+	return *obj.Object.Key
 }
 
 func (obj S3FileInfo) IsDir() bool {
