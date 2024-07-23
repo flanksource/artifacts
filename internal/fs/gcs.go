@@ -38,11 +38,11 @@ func (t *gcsFS) Close() error {
 	return t.Client.Close()
 }
 
-func (t *gcsFS) ReadDir(name string) ([]os.FileInfo, error) {
+func (t *gcsFS) ReadDir(name string) ([]FileInfo, error) {
 	bucket := t.Client.Bucket(t.Bucket)
 	objs := bucket.Objects(gocontext.TODO(), &gcs.Query{Prefix: name})
 
-	var output []os.FileInfo
+	var output []FileInfo
 	for {
 		obj, err := objs.Next()
 		if err != nil {

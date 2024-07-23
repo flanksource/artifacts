@@ -40,3 +40,13 @@ func (s *smbFS) Write(ctx gocontext.Context, path string, data io.Reader) (os.Fi
 
 	return f.Stat()
 }
+
+func (t *smbFS) ReadDir(name string) ([]FileInfo, error) {
+	// fileInfos, err := t.SMBSession.ReadDir(name)
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	// TODO:
+	return nil, nil
+}

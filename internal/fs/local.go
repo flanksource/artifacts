@@ -13,6 +13,15 @@ type localFS struct {
 	base string
 }
 
+type localFileInfo struct {
+	os.FileInfo
+	path string
+}
+
+func (t localFileInfo) FullPath() string {
+	return t.path
+}
+
 func NewLocalFS(base string) *localFS {
 	return &localFS{base: base}
 }
@@ -21,20 +30,21 @@ func (t *localFS) Close() error {
 	return nil
 }
 
-func (t *localFS) ReadDir(name string) ([]os.FileInfo, error) {
-	entries, err := os.ReadDir(filepath.Join(t.base, name))
+func (t *localFS) ReadDir(name string) ([]FileInfo, error) {
+	pattern := filepath.Join(t.base, name)
+	matches, err := filepath.Glob(pattern)
 	if err != nil {
 		return nil, err
 	}
 
-	output := make([]os.FileInfo, 0, len(entries))
-	for _, e := range entries {
-		info, err := e.Info()
+	output := make([]FileInfo, 0, len(matches))
+	for _, match := range matches {
+		info, err := os.Stat(match)
 		if err != nil {
 			return nil, err
 		}
 
-		output = append(output, info)
+		output = append(output, localFileInfo{FileInfo: info, path: match})
 	}
 
 	return output, nil
