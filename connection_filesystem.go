@@ -18,7 +18,7 @@ import (
 
 type Filesystem interface {
 	Close() error
-	ReadDir(name string) ([]os.FileInfo, error)
+	ReadDir(name string) ([]fs.FileInfo, error)
 	Stat(name string) (os.FileInfo, error)
 }
 

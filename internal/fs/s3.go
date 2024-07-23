@@ -42,7 +42,7 @@ func (t *s3FS) Close() error {
 	return nil // NOOP
 }
 
-func (t *s3FS) ReadDir(name string) ([]os.FileInfo, error) {
+func (t *s3FS) ReadDir(name string) ([]FileInfo, error) {
 	req := &s3.ListObjectsInput{
 		Bucket: aws.String(t.Bucket),
 		Prefix: aws.String(name),
@@ -52,7 +52,7 @@ func (t *s3FS) ReadDir(name string) ([]os.FileInfo, error) {
 		return nil, err
 	}
 
-	var output []os.FileInfo
+	var output []FileInfo
 	for _, r := range resp.Contents {
 		output = append(output, &awsUtil.S3FileInfo{Object: r})
 	}

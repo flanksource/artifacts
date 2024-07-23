@@ -31,6 +31,10 @@ func (obj S3FileInfo) ModTime() time.Time {
 	return *obj.Object.LastModified
 }
 
+func (obj S3FileInfo) FullPath() string {
+	return "" // TODO
+}
+
 func (obj S3FileInfo) IsDir() bool {
 	return strings.HasSuffix(obj.Name(), "/")
 }

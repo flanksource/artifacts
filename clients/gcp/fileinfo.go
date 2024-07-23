@@ -34,3 +34,7 @@ func (obj GCSFileInfo) Size() int64 {
 func (obj GCSFileInfo) Sys() interface{} {
 	return obj.Object
 }
+
+func (obj GCSFileInfo) FullPath() string {
+	return "" // TODO
+}
