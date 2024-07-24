@@ -8,6 +8,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.26.3
 	github.com/aws/aws-sdk-go-v2/credentials v1.16.14
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.48.0
+	github.com/bmatcuk/doublestar/v4 v4.6.1
 	github.com/flanksource/commons v1.22.1
 	github.com/flanksource/duty v1.0.495
 	github.com/gabriel-vasile/mimetype v1.4.3
