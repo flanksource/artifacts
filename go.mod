@@ -15,7 +15,9 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/henvic/httpretty v0.1.3
 	github.com/hirochachacha/go-smb2 v1.1.0
+	github.com/jszwec/s3fs/v2 v2.0.0
 	github.com/pkg/sftp v1.13.6
+	github.com/samber/lo v1.39.0
 	golang.org/x/crypto v0.22.0
 	google.golang.org/api v0.169.0
 )
@@ -31,7 +33,7 @@ require (
 	github.com/RaveNoX/go-jsonmerge v1.0.0 // indirect
 	github.com/TomOnTime/utfutil v0.0.0-20230223141146-125e65197b36 // indirect
 	github.com/antlr4-go/antlr/v4 v4.13.0 // indirect
-	github.com/aws/aws-sdk-go v1.49.16 // indirect
+	github.com/aws/aws-sdk-go v1.55.1 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.5.4 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.14.11 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.2.10 // indirect
@@ -135,7 +137,6 @@ require (
 	github.com/prometheus/procfs v0.10.1 // indirect
 	github.com/robertkrimen/otto v0.3.0 // indirect
 	github.com/rogpeppe/go-internal v1.12.0 // indirect
-	github.com/samber/lo v1.39.0 // indirect
 	github.com/sergi/go-diff v1.3.1 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/spf13/cobra v1.7.0 // indirect
@@ -200,3 +201,5 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
+
+replace github.com/jszwec/s3fs/v2 => ../s3fs
