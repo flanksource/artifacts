@@ -6,6 +6,8 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+
+	"github.com/bmatcuk/doublestar/v4"
 )
 
 // localFS implements FilesystemRW for local filesystem
@@ -15,11 +17,11 @@ type localFS struct {
 
 type localFileInfo struct {
 	os.FileInfo
-	path string
+	fullpath string
 }
 
 func (t localFileInfo) FullPath() string {
-	return t.path
+	return t.fullpath
 }
 
 func NewLocalFS(base string) *localFS {
@@ -31,20 +33,21 @@ func (t *localFS) Close() error {
 }
 
 func (t *localFS) ReadDir(name string) ([]FileInfo, error) {
-	pattern := filepath.Join(t.base, name)
-	matches, err := filepath.Glob(pattern)
+	base, pattern := doublestar.SplitPattern(filepath.Join(t.base, name))
+	matches, err := doublestar.Glob(os.DirFS(base), pattern)
 	if err != nil {
 		return nil, err
 	}
 
 	output := make([]FileInfo, 0, len(matches))
 	for _, match := range matches {
-		info, err := os.Stat(match)
+		fullPath := filepath.Join(base, match)
+		info, err := os.Stat(fullPath)
 		if err != nil {
 			return nil, err
 		}
 
-		output = append(output, localFileInfo{FileInfo: info, path: match})
+		output = append(output, localFileInfo{FileInfo: info, fullpath: fullPath})
 	}
 
 	return output, nil
