@@ -23,7 +23,7 @@ import (
 // - FilesystemRW for S3
 // - fs.FS for glob support
 type s3FS struct {
-	*s3.Client
+	Client *s3.Client
 	Bucket string
 }
 
