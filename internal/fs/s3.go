@@ -5,157 +5,19 @@ import (
 	"io"
 	"io/fs"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	s3Types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/bmatcuk/doublestar/v4"
 	awsUtil "github.com/flanksource/artifacts/clients/aws"
-	"github.com/flanksource/commons/logger"
 	"github.com/flanksource/commons/utils"
 	"github.com/flanksource/duty/connection"
 	"github.com/flanksource/duty/context"
-	jszwecs3fs "github.com/jszwec/s3fs/v2"
-	"github.com/samber/lo"
+	"github.com/flanksource/s3fs/v2"
 )
-
-type s3FileInfo struct {
-	key    string
-	object s3.GetObjectOutput
-}
-
-func (fi s3FileInfo) Name() string {
-	return filepath.Base(fi.key)
-}
-
-func (fi s3FileInfo) Size() int64 {
-	return *fi.object.ContentLength
-}
-
-func (fi s3FileInfo) Mode() fs.FileMode {
-	return 0644 // TODO:
-}
-
-func (fi s3FileInfo) ModTime() time.Time {
-	return lo.FromPtr(fi.object.LastModified)
-}
-
-func (fi s3FileInfo) IsDir() bool {
-	return false // TODO:
-}
-
-func (fi s3FileInfo) Sys() any {
-	return nil
-}
-
-type s3File struct {
-	key    string
-	object s3.GetObjectOutput
-}
-
-func (t *s3File) Stat() (fs.FileInfo, error) {
-	return s3FileInfo{object: t.object, key: t.key}, nil
-}
-
-func (t *s3File) Close() error {
-	return t.object.Body.Close()
-}
-
-func (t *s3File) Read(b []byte) (int, error) {
-	return t.object.Body.Read(b)
-}
-
-type s3DirFS struct {
-	*s3FS
-	base string
-}
-
-func (t *s3DirFS) Open(name string) (fs.File, error) {
-	output, err := t.Client.GetObject(gocontext.TODO(), &s3.GetObjectInput{
-		Bucket: &t.Bucket,
-		Key:    &name,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return &s3File{object: *output, key: name}, nil
-}
-
-func (t *s3DirFS) Stat(path string) (fs.FileInfo, error) {
-	return t.s3FS.Stat(filepath.Join(t.base, path))
-}
-
-func (t *s3DirFS) ReadDir(name string) ([]fs.DirEntry, error) {
-	prefix := path.Join(t.base, name)
-	if prefix == "." {
-		prefix = ""
-	}
-
-	input := &s3.ListObjectsV2Input{
-		Bucket: &t.Bucket,
-		Prefix: &prefix,
-	}
-
-	var entries []fs.DirEntry
-	paginator := s3.NewListObjectsV2Paginator(t.Client, input)
-	for paginator.HasMorePages() {
-		page, err := paginator.NextPage(gocontext.TODO())
-		if err != nil {
-			return nil, err
-		}
-
-		for _, object := range page.Contents {
-			key := *object.Key
-			if key == prefix {
-				continue // Skip the directory itself
-			}
-			entry := s3DirEntry{
-				key:          key,
-				size:         *object.Size,
-				lastModified: *object.LastModified,
-			}
-			entries = append(entries, &entry)
-		}
-	}
-
-	return entries, nil
-}
-
-type s3DirEntry struct {
-	key          string
-	size         int64
-	lastModified time.Time
-}
-
-func (e *s3DirEntry) Name() string {
-	return filepath.Base(e.key)
-}
-
-func (e *s3DirEntry) IsDir() bool {
-	return strings.HasSuffix(e.key, "/")
-}
-
-func (e *s3DirEntry) Type() fs.FileMode {
-	if e.IsDir() {
-		return fs.ModeDir
-	}
-	return 0
-}
-
-func (e *s3DirEntry) Info() (fs.FileInfo, error) {
-	return s3FileInfo{
-		key: e.key,
-		object: s3.GetObjectOutput{
-			ContentLength: &e.size,
-			LastModified:  &e.lastModified,
-		},
-	}, nil
-}
 
 // s3FS implements
 // - FilesystemRW for S3
@@ -187,43 +49,15 @@ func (t *s3FS) Close() error {
 
 func (t *s3FS) ReadDir(pattern string) ([]FileInfo, error) {
 	base, pattern := doublestar.SplitPattern(pattern)
-	matches, err := doublestar.Glob(jszwecs3fs.New(t.Client, t.Bucket).WithBase(base), pattern)
-	if err != nil {
-		return nil, err
-	}
-
-	logger.Infof("matches: %d", len(matches))
-
-	dir := filepath.Dir(pattern)
-	if dir == "." || dir == "**" {
-		dir = ""
-	}
-
-	req := &s3.ListObjectsInput{
-		Bucket: aws.String(t.Bucket),
-		Prefix: aws.String(dir),
-	}
-
-	resp, err := t.Client.ListObjects(gocontext.TODO(), req)
+	matches, err := doublestar.Glob(s3fs.New(t.Client, t.Bucket).WithPrefix(base), pattern)
 	if err != nil {
 		return nil, err
 	}
 
 	var output []FileInfo
-	for _, r := range resp.Contents {
-		name := strings.TrimPrefix(*r.Key, dir)
-		if dir != "" {
-			name = strings.TrimPrefix(name, "/")
-		}
-
-		match, err := filepath.Match(filepath.Base(pattern), name)
-		if err != nil {
-			return nil, err
-		}
-
-		if match {
-			output = append(output, &awsUtil.S3FileInfo{Object: r})
-		}
+	for _, r := range matches {
+		fullpath := filepath.Join(base, r)
+		output = append(output, &awsUtil.S3FileInfo{Object: s3Types.Object{Key: &fullpath}})
 	}
 
 	return output, nil
