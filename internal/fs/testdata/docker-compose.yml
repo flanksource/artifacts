@@ -1,0 +1,30 @@
+services:
+  localstack:
+    container_name: 'localstack'
+    image: localstack/localstack:0.14.0
+    network_mode: bridge
+    ports:
+      - '4566:4566'
+      - '4571:4571'
+    environment:
+      - SERVICES=s3
+    profiles:
+      - disable
+
+  minio:
+    image: minio/minio
+    ports:
+      - '9000:9000'
+      - '9001:9001'
+    environment:
+      MINIO_CONSOLE_ADDRESS: ':9001'
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+    command: server /data
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:9000/minio/health/live']
+      interval: 30s
+      timeout: 20s
+      retries: 3

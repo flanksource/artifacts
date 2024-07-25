@@ -7,6 +7,7 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.24.1
 	github.com/aws/aws-sdk-go-v2/config v1.26.3
 	github.com/aws/aws-sdk-go-v2/credentials v1.16.14
+	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.15.7
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.48.0
 	github.com/bmatcuk/doublestar/v4 v4.6.1
 	github.com/flanksource/commons v1.22.1
@@ -17,6 +18,7 @@ require (
 	github.com/henvic/httpretty v0.1.3
 	github.com/hirochachacha/go-smb2 v1.1.0
 	github.com/pkg/sftp v1.13.6
+	github.com/samber/lo v1.39.0
 	golang.org/x/crypto v0.22.0
 	google.golang.org/api v0.169.0
 )
@@ -136,7 +138,6 @@ require (
 	github.com/prometheus/procfs v0.10.1 // indirect
 	github.com/robertkrimen/otto v0.3.0 // indirect
 	github.com/rogpeppe/go-internal v1.12.0 // indirect
-	github.com/samber/lo v1.39.0 // indirect
 	github.com/sergi/go-diff v1.3.1 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/spf13/cobra v1.7.0 // indirect
