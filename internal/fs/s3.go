@@ -28,14 +28,22 @@ type s3FS struct {
 }
 
 func NewS3FS(ctx context.Context, bucket string, conn connection.S3Connection) (*s3FS, error) {
-	cfg, err := awsUtil.NewSession(ctx, conn.AWSConnection)
+	if err := conn.Populate(ctx); err != nil {
+		return nil, err
+	}
+
+	cfg, err := conn.AWSConnection.Client(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	client := &s3FS{
-		Client: s3.NewFromConfig(*cfg, func(o *s3.Options) {
+		Client: s3.NewFromConfig(cfg, func(o *s3.Options) {
 			o.UsePathStyle = conn.UsePathStyle
+
+			if conn.Endpoint != "" {
+				o.BaseEndpoint = &conn.Endpoint
+			}
 		}),
 		Bucket: strings.TrimPrefix(bucket, "s3://"),
 	}
