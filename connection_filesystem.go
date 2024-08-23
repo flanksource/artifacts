@@ -2,6 +2,7 @@ package artifacts
 
 import (
 	gocontext "context"
+	"fmt"
 	"io"
 	"net/url"
 	"os"
@@ -87,7 +88,7 @@ func GetFSForConnection(ctx context.Context, c models.Connection) (FilesystemRW,
 			return nil, err
 		}
 
-		client, err := fs.NewSSHFS(parsedURL.Host, c.Username, c.Password)
+		client, err := fs.NewSSHFS(fmt.Sprintf("%s:%s", parsedURL.Host, c.Properties["port"]), c.Username, c.Password)
 		if err != nil {
 			return nil, err
 		}
