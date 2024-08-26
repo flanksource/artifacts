@@ -50,6 +50,7 @@ func TestS3Glob(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	fs.SetMaxList(2) // Test pagination
 
 	// json/
 	// └── flanksource/
@@ -91,6 +92,10 @@ func TestS3Glob(t *testing.T) {
 		{
 			pattern: "**/*.yaml",
 			count:   0,
+		},
+		{
+			pattern: "**/*.json",
+			count:   6,
 		},
 	}
 

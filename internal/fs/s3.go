@@ -16,15 +16,15 @@ import (
 	"github.com/flanksource/commons/utils"
 	"github.com/flanksource/duty/connection"
 	"github.com/flanksource/duty/context"
-	"github.com/flanksource/s3fs/v2"
 )
 
 // s3FS implements
 // - FilesystemRW for S3
 // - fs.FS for glob support
 type s3FS struct {
-	Client *s3.Client
-	Bucket string
+	maxList *int32
+	Client  *s3.Client
+	Bucket  string
 }
 
 func NewS3FS(ctx context.Context, bucket string, conn connection.S3Connection) (*s3FS, error) {
@@ -51,21 +51,49 @@ func NewS3FS(ctx context.Context, bucket string, conn connection.S3Connection) (
 	return client, nil
 }
 
+func (t *s3FS) SetMaxList(maxList int32) {
+	t.maxList = &maxList
+}
+
 func (t *s3FS) Close() error {
 	return nil // NOOP
 }
 
 func (t *s3FS) ReadDir(pattern string) ([]FileInfo, error) {
-	base, pattern := doublestar.SplitPattern(pattern)
-	matches, err := doublestar.Glob(s3fs.New(t.Client, t.Bucket).WithPrefix(base), pattern)
-	if err != nil {
-		return nil, err
+	prefix, _ := doublestar.SplitPattern(pattern)
+	if prefix == "." {
+		prefix = ""
+	}
+
+	req := &s3.ListObjectsV2Input{
+		Bucket:  aws.String(t.Bucket),
+		Prefix:  aws.String(prefix),
+		MaxKeys: t.maxList,
 	}
 
 	var output []FileInfo
-	for _, r := range matches {
-		fullpath := filepath.Join(base, r)
-		output = append(output, &awsUtil.S3FileInfo{Object: s3Types.Object{Key: &fullpath}})
+	for {
+		resp, err := t.Client.ListObjectsV2(gocontext.TODO(), req)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, obj := range resp.Contents {
+			if matched, err := doublestar.Match(pattern, *obj.Key); err != nil {
+				return nil, err
+			} else if !matched {
+				continue
+			}
+
+			fileInfo := &awsUtil.S3FileInfo{Object: obj}
+			output = append(output, fileInfo)
+		}
+
+		if resp.NextContinuationToken == nil {
+			break
+		}
+
+		req.ContinuationToken = resp.NextContinuationToken
 	}
 
 	return output, nil
