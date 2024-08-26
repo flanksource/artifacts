@@ -79,10 +79,12 @@ func (t *s3FS) ReadDir(pattern string) ([]FileInfo, error) {
 		}
 
 		for _, obj := range resp.Contents {
-			if matched, err := doublestar.Match(pattern, *obj.Key); err != nil {
-				return nil, err
-			} else if !matched {
-				continue
+			if pattern != "" {
+				if matched, err := doublestar.Match(pattern, *obj.Key); err != nil {
+					return nil, err
+				} else if !matched {
+					continue
+				}
 			}
 
 			fileInfo := &awsUtil.S3FileInfo{Object: obj}
