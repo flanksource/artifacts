@@ -16,7 +16,6 @@ import (
 	"github.com/flanksource/commons/utils"
 	"github.com/flanksource/duty/connection"
 	"github.com/flanksource/duty/context"
-	"github.com/flanksource/s3fs/v2"
 )
 
 // s3FS implements
@@ -56,16 +55,30 @@ func (t *s3FS) Close() error {
 }
 
 func (t *s3FS) ReadDir(pattern string) ([]FileInfo, error) {
-	base, pattern := doublestar.SplitPattern(pattern)
-	matches, err := doublestar.Glob(s3fs.New(t.Client, t.Bucket).WithPrefix(base), pattern)
+	prefix, pattern := doublestar.SplitPattern(pattern)
+
+	req := &s3.ListObjectsInput{
+		Bucket: aws.String(t.Bucket),
+		Prefix: aws.String(prefix),
+	}
+	resp, err := t.Client.ListObjects(gocontext.TODO(), req)
 	if err != nil {
 		return nil, err
 	}
 
 	var output []FileInfo
-	for _, r := range matches {
-		fullpath := filepath.Join(base, r)
-		output = append(output, &awsUtil.S3FileInfo{Object: s3Types.Object{Key: &fullpath}})
+	for _, obj := range resp.Contents {
+		if matched, err := doublestar.Match(pattern, *obj.Key); err != nil {
+			return nil, err
+		} else if !matched {
+			continue
+		}
+
+		fileInfo := &awsUtil.S3FileInfo{
+			Object: obj,
+		}
+
+		output = append(output, fileInfo)
 	}
 
 	return output, nil
