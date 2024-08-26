@@ -16,6 +16,7 @@ import (
 	"github.com/flanksource/commons/utils"
 	"github.com/flanksource/duty/connection"
 	"github.com/flanksource/duty/context"
+	"github.com/samber/lo"
 )
 
 // s3FS implements
@@ -51,8 +52,8 @@ func NewS3FS(ctx context.Context, bucket string, conn connection.S3Connection) (
 	return client, nil
 }
 
-func (t *s3FS) SetMaxList(maxList int32) {
-	t.maxList = &maxList
+func (t *s3FS) SetPageSize(maxList int) {
+	t.maxList = lo.ToPtr(int32(maxList))
 }
 
 func (t *s3FS) Close() error {

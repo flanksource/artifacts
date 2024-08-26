@@ -50,7 +50,7 @@ func TestS3Glob(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	fs.SetMaxList(2) // Test pagination
+	fs.SetPageSize(2) // Test pagination
 
 	// json/
 	// └── flanksource/
