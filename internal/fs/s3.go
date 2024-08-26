@@ -22,8 +22,9 @@ import (
 // - FilesystemRW for S3
 // - fs.FS for glob support
 type s3FS struct {
-	Client *s3.Client
-	Bucket string
+	maxList *int32
+	Client  *s3.Client
+	Bucket  string
 }
 
 func NewS3FS(ctx context.Context, bucket string, conn connection.S3Connection) (*s3FS, error) {
@@ -50,35 +51,49 @@ func NewS3FS(ctx context.Context, bucket string, conn connection.S3Connection) (
 	return client, nil
 }
 
+func (t *s3FS) SetMaxList(maxList int32) {
+	t.maxList = &maxList
+}
+
 func (t *s3FS) Close() error {
 	return nil // NOOP
 }
 
 func (t *s3FS) ReadDir(pattern string) ([]FileInfo, error) {
-	prefix, pattern := doublestar.SplitPattern(pattern)
-
-	req := &s3.ListObjectsInput{
-		Bucket: aws.String(t.Bucket),
-		Prefix: aws.String(prefix),
+	prefix, _ := doublestar.SplitPattern(pattern)
+	if prefix == "." {
+		prefix = ""
 	}
-	resp, err := t.Client.ListObjects(gocontext.TODO(), req)
-	if err != nil {
-		return nil, err
+
+	req := &s3.ListObjectsV2Input{
+		Bucket:  aws.String(t.Bucket),
+		Prefix:  aws.String(prefix),
+		MaxKeys: t.maxList,
 	}
 
 	var output []FileInfo
-	for _, obj := range resp.Contents {
-		if matched, err := doublestar.Match(pattern, *obj.Key); err != nil {
+	for {
+		resp, err := t.Client.ListObjectsV2(gocontext.TODO(), req)
+		if err != nil {
 			return nil, err
-		} else if !matched {
-			continue
 		}
 
-		fileInfo := &awsUtil.S3FileInfo{
-			Object: obj,
+		for _, obj := range resp.Contents {
+			if matched, err := doublestar.Match(pattern, *obj.Key); err != nil {
+				return nil, err
+			} else if !matched {
+				continue
+			}
+
+			fileInfo := &awsUtil.S3FileInfo{Object: obj}
+			output = append(output, fileInfo)
 		}
 
-		output = append(output, fileInfo)
+		if resp.NextContinuationToken == nil {
+			break
+		}
+
+		req.ContinuationToken = resp.NextContinuationToken
 	}
 
 	return output, nil
