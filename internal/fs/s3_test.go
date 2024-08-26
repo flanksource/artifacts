@@ -50,7 +50,6 @@ func TestS3Glob(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	fs.SetPageSize(2) // Test pagination
 
 	// json/
 	// └── flanksource/
@@ -74,8 +73,9 @@ func TestS3Glob(t *testing.T) {
 	writeFile(t, fs.Client, *bucket, "json/flanksource/tech/cloud/azure.json", []byte(`{"name": "Azure"}`))
 
 	testData := []struct {
-		pattern string
-		count   int
+		pattern    string
+		count      int
+		maxObjects int
 	}{
 		{
 			pattern: "json/**/*.json",
@@ -97,9 +97,18 @@ func TestS3Glob(t *testing.T) {
 			pattern: "**/*.json",
 			count:   6,
 		},
+		{
+			pattern:    "**/*.json",
+			count:      2,
+			maxObjects: 2,
+		},
 	}
 
 	for _, td := range testData {
+		if td.maxObjects != 0 {
+			fs.SetMaxListItems(td.maxObjects)
+		}
+
 		list, err := fs.ReadDir(td.pattern)
 		if err != nil {
 			t.Fatal(err)

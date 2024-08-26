@@ -19,13 +19,17 @@ import (
 	"github.com/samber/lo"
 )
 
+const s3ListObjectMaxKeys = 1000
+
 // s3FS implements
 // - FilesystemRW for S3
 // - fs.FS for glob support
 type s3FS struct {
-	maxList *int32
-	Client  *s3.Client
-	Bucket  string
+	// maxObjects limits the total number of objects ReadDir can return.
+	maxObjects int
+
+	Client *s3.Client
+	Bucket string
 }
 
 func NewS3FS(ctx context.Context, bucket string, conn connection.S3Connection) (*s3FS, error) {
@@ -39,6 +43,7 @@ func NewS3FS(ctx context.Context, bucket string, conn connection.S3Connection) (
 	}
 
 	client := &s3FS{
+		maxObjects: 50 * 10_000,
 		Client: s3.NewFromConfig(cfg, func(o *s3.Options) {
 			o.UsePathStyle = conn.UsePathStyle
 
@@ -52,8 +57,8 @@ func NewS3FS(ctx context.Context, bucket string, conn connection.S3Connection) (
 	return client, nil
 }
 
-func (t *s3FS) SetPageSize(maxList int) {
-	t.maxList = lo.ToPtr(int32(maxList))
+func (t *s3FS) SetMaxListItems(max int) {
+	t.maxObjects = max
 }
 
 func (t *s3FS) Close() error {
@@ -67,12 +72,16 @@ func (t *s3FS) ReadDir(pattern string) ([]FileInfo, error) {
 	}
 
 	req := &s3.ListObjectsV2Input{
-		Bucket:  aws.String(t.Bucket),
-		Prefix:  aws.String(prefix),
-		MaxKeys: t.maxList,
+		Bucket: aws.String(t.Bucket),
+		Prefix: aws.String(prefix),
+	}
+
+	if t.maxObjects < s3ListObjectMaxKeys {
+		req.MaxKeys = lo.ToPtr(int32(t.maxObjects))
 	}
 
 	var output []FileInfo
+	var numObjectsFetched int
 	for {
 		resp, err := t.Client.ListObjectsV2(gocontext.TODO(), req)
 		if err != nil {
@@ -93,6 +102,11 @@ func (t *s3FS) ReadDir(pattern string) ([]FileInfo, error) {
 		}
 
 		if resp.NextContinuationToken == nil {
+			break
+		}
+
+		numObjectsFetched += int(*resp.KeyCount)
+		if numObjectsFetched >= t.maxObjects {
 			break
 		}
 
