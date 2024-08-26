@@ -9,6 +9,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/flanksource/commons/utils"
+	"github.com/samber/lo"
 )
 
 type S3FileInfo struct {
@@ -28,7 +29,7 @@ func (obj S3FileInfo) Mode() fs.FileMode {
 }
 
 func (obj S3FileInfo) ModTime() time.Time {
-	return *obj.Object.LastModified
+	return lo.FromPtr(obj.Object.LastModified)
 }
 
 func (obj S3FileInfo) FullPath() string {
