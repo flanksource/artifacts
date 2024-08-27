@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 
+	artifactFS "github.com/flanksource/artifacts/fs"
 	"github.com/flanksource/duty/context"
 	"github.com/flanksource/duty/models"
 	"github.com/gabriel-vasile/mimetype"
@@ -43,7 +44,7 @@ type Artifact struct {
 
 const maxBytesForMimeDetection = 512 * 1024 // 512KB
 
-func SaveArtifact(ctx context.Context, fs FilesystemRW, artifact *models.Artifact, data Artifact) error {
+func SaveArtifact(ctx context.Context, fs artifactFS.FilesystemRW, artifact *models.Artifact, data Artifact) error {
 	defer data.Content.Close()
 
 	checksum := sha256.New()
