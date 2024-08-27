@@ -1,14 +1,11 @@
 package artifacts
 
 import (
-	gocontext "context"
 	"fmt"
-	"io"
 	"net/url"
-	"os"
 	"strconv"
 
-	"github.com/flanksource/artifacts/internal/fs"
+	"github.com/flanksource/artifacts/fs"
 	"github.com/google/uuid"
 
 	"github.com/flanksource/duty/connection"
@@ -17,19 +14,7 @@ import (
 	"github.com/flanksource/duty/types"
 )
 
-type Filesystem interface {
-	Close() error
-	ReadDir(name string) ([]fs.FileInfo, error)
-	Stat(name string) (os.FileInfo, error)
-}
-
-type FilesystemRW interface {
-	Filesystem
-	Read(ctx gocontext.Context, path string) (io.ReadCloser, error)
-	Write(ctx gocontext.Context, path string, data io.Reader) (os.FileInfo, error)
-}
-
-func GetFSForConnection(ctx context.Context, c models.Connection) (FilesystemRW, error) {
+func GetFSForConnection(ctx context.Context, c models.Connection) (fs.FilesystemRW, error) {
 	switch c.Type {
 	case models.ConnectionTypeFolder:
 		path := c.Properties["path"]
