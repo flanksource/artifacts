@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/bmatcuk/doublestar/v4"
 )
@@ -33,6 +34,31 @@ func (t *localFS) Close() error {
 }
 
 func (t *localFS) ReadDir(name string) ([]FileInfo, error) {
+	if strings.Contains(name, "*") {
+		return t.ReadDirGlob(name)
+	}
+
+	path := filepath.Join(t.base, name)
+	files, err := os.ReadDir(path)
+	if err != nil {
+		return nil, err
+	}
+
+	output := make([]FileInfo, 0, len(files))
+	for _, match := range files {
+		fullPath := filepath.Join(path, match.Name())
+		info, err := os.Stat(fullPath)
+		if err != nil {
+			return nil, err
+		}
+
+		output = append(output, localFileInfo{FileInfo: info, fullpath: fullPath})
+	}
+
+	return output, nil
+}
+
+func (t *localFS) ReadDirGlob(name string) ([]FileInfo, error) {
 	base, pattern := doublestar.SplitPattern(filepath.Join(t.base, name))
 	matches, err := doublestar.Glob(os.DirFS(base), pattern)
 	if err != nil {
