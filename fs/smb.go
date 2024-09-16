@@ -19,16 +19,20 @@ type smbFS struct {
 	*smb.SMBSession
 }
 
-type SMBFile struct {
+type SMBFileInfo struct {
 	Base string
 	fs.FileInfo
 }
 
-func (t *SMBFile) FullPath() string {
+func (t *SMBFileInfo) FullPath() string {
 	return path.Join(t.Base, t.FileInfo.Name())
 }
 
 func NewSMBFS(server string, port, share string, auth types.Authentication) (*smbFS, error) {
+	if port == "" {
+		port = "445"
+	}
+
 	session, err := smb.SMBConnect(server, port, share, auth)
 	if err != nil {
 		return nil, err
@@ -67,7 +71,7 @@ func (t *smbFS) ReadDir(name string) ([]FileInfo, error) {
 
 	output := make([]FileInfo, 0, len(fileInfos))
 	for _, fileInfo := range fileInfos {
-		output = append(output, &SMBFile{Base: name, FileInfo: fileInfo})
+		output = append(output, &SMBFileInfo{Base: name, FileInfo: fileInfo})
 	}
 
 	return output, nil
@@ -88,7 +92,7 @@ func (t *smbFS) ReadDirGlob(name string) ([]FileInfo, error) {
 			return nil, err
 		}
 
-		output = append(output, &SMBFile{Base: name, FileInfo: info})
+		output = append(output, &SMBFileInfo{Base: name, FileInfo: info})
 	}
 
 	return output, nil

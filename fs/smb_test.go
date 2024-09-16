@@ -4,7 +4,7 @@ package fs
 // func TestSMB(t *testing.T) {
 // 	password := os.Getenv("NAS_SMB_PASSWORD")
 
-// 	fs, err := NewSMBFS("nas.home.adityathebe.com", "445", "aditya", types.Authentication{
+// 	fs, err := NewSMBFS("localhost", "445", "aditya", types.Authentication{
 // 		Username: types.EnvVar{ValueStatic: "aditya"},
 // 		Password: types.EnvVar{ValueStatic: password}})
 // 	if err != nil {
