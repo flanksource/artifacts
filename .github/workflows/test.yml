@@ -11,6 +11,11 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - name: Start smb server
+        run: |
+          cd fs/testdata
+          docker compose up smb -d
+
       - name: Set up Go
         uses: actions/setup-go@v2
         with:
