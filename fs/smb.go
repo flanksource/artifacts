@@ -4,14 +4,28 @@ import (
 	gocontext "context"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
+	"path"
+	"path/filepath"
+	"strings"
 
+	"github.com/bmatcuk/doublestar/v4"
 	"github.com/flanksource/artifacts/clients/smb"
 	"github.com/flanksource/duty/types"
 )
 
 type smbFS struct {
 	*smb.SMBSession
+}
+
+type SMBFile struct {
+	Base string
+	fs.FileInfo
+}
+
+func (t *SMBFile) FullPath() string {
+	return path.Join(t.Base, t.FileInfo.Name())
 }
 
 func NewSMBFS(server string, port, share string, auth types.Authentication) (*smbFS, error) {
@@ -42,11 +56,40 @@ func (s *smbFS) Write(ctx gocontext.Context, path string, data io.Reader) (os.Fi
 }
 
 func (t *smbFS) ReadDir(name string) ([]FileInfo, error) {
-	// fileInfos, err := t.SMBSession.ReadDir(name)
-	// if err != nil {
-	// 	return nil, err
-	// }
+	if strings.Contains(name, "*") {
+		return t.ReadDirGlob(name)
+	}
 
-	// TODO:
-	return nil, nil
+	fileInfos, err := t.SMBSession.ReadDir(name)
+	if err != nil {
+		return nil, err
+	}
+
+	output := make([]FileInfo, 0, len(fileInfos))
+	for _, fileInfo := range fileInfos {
+		output = append(output, &SMBFile{Base: name, FileInfo: fileInfo})
+	}
+
+	return output, nil
+}
+
+func (t *smbFS) ReadDirGlob(name string) ([]FileInfo, error) {
+	base, pattern := doublestar.SplitPattern(name)
+	matches, err := doublestar.Glob(t.DirFS(base), pattern)
+	if err != nil {
+		return nil, fmt.Errorf("error globbing pattern %q: %w", pattern, err)
+	}
+
+	output := make([]FileInfo, 0, len(matches))
+	for _, match := range matches {
+		fullPath := filepath.Join(base, match)
+		info, err := t.Stat(fullPath)
+		if err != nil {
+			return nil, err
+		}
+
+		output = append(output, &SMBFile{Base: name, FileInfo: info})
+	}
+
+	return output, nil
 }
