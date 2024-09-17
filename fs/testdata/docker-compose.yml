@@ -1,15 +1,9 @@
 services:
-  localstack:
-    container_name: 'localstack'
-    image: localstack/localstack:0.14.0
-    network_mode: bridge
+  gcs:
+    image: fsouza/fake-gcs-server
+    container_name: fake-gcs-server
     ports:
-      - '4566:4566'
-      - '4571:4571'
-    environment:
-      - SERVICES=s3
-    profiles:
-      - disable
+      - 4443:4443
 
   minio:
     image: minio/minio

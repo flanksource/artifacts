@@ -4,15 +4,18 @@ import (
 	gocontext "context"
 	"errors"
 	"flag"
+	"io"
 	"os"
 	"strings"
 	"testing"
 	"time"
 
+	"cloud.google.com/go/storage"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/flanksource/duty/connection"
 	"github.com/flanksource/duty/context"
 	"github.com/flanksource/duty/types"
+	"google.golang.org/api/googleapi"
 
 	s3Types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
@@ -33,6 +36,7 @@ func TestMain(m *testing.M) {
 	flag.Parse()
 	os.Exit(m.Run())
 }
+
 func TestFS(t *testing.T) {
 	parentCtx, cancel := gocontext.WithTimeout(gocontext.Background(), time.Minute)
 	defer cancel()
@@ -45,13 +49,40 @@ func TestFS(t *testing.T) {
 				t.Fatalf("%v", err)
 			}
 
-			files, err := client.fs.ReadDir("*")
+			dir := "*"
+			if client.name == "gcsFS" {
+				dir = ""
+			}
+
+			files, err := client.fs.ReadDir(dir)
 			if err != nil {
 				t.Fatalf("%v", err)
 			}
 
 			if len(files) != 5 {
 				t.Fatalf("expected 5 files, got %d", len(files))
+			}
+
+			// GCS doesn't support glob yet
+			if client.name == "gcsFS" {
+				return
+			}
+
+			{
+				file, err := client.fs.Read(ctx, "record-1.txt")
+				if err != nil {
+					t.Fatalf("%v", err)
+				}
+				defer file.Close()
+
+				content, err := io.ReadAll(file)
+				if err != nil {
+					t.Fatalf("%v", err)
+				}
+
+				if string(content) != "record-1" {
+					t.Errorf("expected content to be record-1, got %s", string(content))
+				}
 			}
 
 			{
@@ -122,6 +153,17 @@ type testData struct {
 func getTestClients(t *testing.T, ctx context.Context) []testData {
 	t.Helper()
 
+	gcsFS, err := NewGCSFS(ctx, "test", connection.GCSConnection{
+		GCPConnection: connection.GCPConnection{
+			SkipTLSVerify: true,
+			Endpoint:      "https://localhost:4443/storage/v1/",
+		},
+	})
+	if err != nil {
+		t.Fatalf("failed to create GCS filesystem: %v", err)
+	}
+	createGSCBucket(t, ctx, gcsFS.Client, "fkae-project", "test")
+
 	sshfs, err := NewSSHFS("localhost:2222", "foo", "pass")
 	if err != nil {
 		t.Fatalf("%v", err)
@@ -151,6 +193,7 @@ func getTestClients(t *testing.T, ctx context.Context) []testData {
 	createBucket(t, s3FS.Client, *bucket)
 
 	testClients := []testData{
+		{"gcsFS", gcsFS},
 		{"sshfs", sshfs},
 		{"smbfs", smbFS},
 		{"s3FS", s3FS},
@@ -171,6 +214,22 @@ func createBucket(t *testing.T, cl *s3.Client, bucket string) {
 		if errors.As(err, &e) {
 			return
 		}
+		t.Fatal(err)
+	}
+}
+
+func createGSCBucket(t *testing.T, ctx context.Context, cl *storage.Client, projectID, bucket string) {
+	t.Helper()
+
+	err := cl.Bucket(bucket).Create(ctx, projectID, nil)
+	if err != nil {
+		var gErr *googleapi.Error
+		if errors.As(err, &gErr) {
+			if gErr.Code == 409 {
+				return
+			}
+		}
+
 		t.Fatal(err)
 	}
 }
