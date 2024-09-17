@@ -35,11 +35,16 @@ services:
       - "445:445"
     command: >
       -p
-      -u "example1;badpass"
-      -u "example2;badpass"
+      -u "foo;pass"
       -s "public;/share"
-      -s "users;/srv;no;no;no;example1,example2"
-      -s "example1 private share;/example1;no;no;no;example1"
-      -s "example2 private share;/example2;no;no;no;example2"
+      -s "users;/srv;no;no;no;foo,example2"
+      -s "foo private share;/foo;no;no;no;foo"
     hostname: samba
     container_name: samba
+
+  sftp:
+    image: emberstack/sftp
+    ports:
+      - "2222:22"
+    volumes:
+      - ./sftp-configuration.json:/app/config/sftp.json:ro

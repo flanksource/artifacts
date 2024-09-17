@@ -1,20 +1,41 @@
 package fs
 
-// TODO: Setup SFTP server on CI
-// func TestSSHFS(t *testing.T) {
-// 	password := os.Getenv("NAS_SMB_PASSWORD")
+import (
+	"testing"
+)
 
-// 	fs, err := NewSSHFS("localhost:22", "admin", password)
-// 	if err != nil {
-// 		t.Fatalf(err.Error())
-// 	}
+func TestSSHFS(t *testing.T) {
+	username := "foo"
+	password := "pass"
 
-// 	files, err := fs.ReadDir("/mnt/mega/aditya/documents/**/*.pdf")
-// 	if err != nil {
-// 		t.Fatalf(err.Error())
-// 	}
+	fs, err := NewSSHFS("localhost:2222", username, password)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
 
-// 	for _, p := range files {
-// 		fmt.Printf("file: %s\n", p.FullPath())
-// 	}
-// }
+	if err := populateFS(fs); err != nil {
+		t.Fatalf("%v", err)
+	}
+
+	{
+		files, err := fs.ReadDir("*.json")
+		if err != nil {
+			t.Fatalf("%v", err)
+		}
+
+		if len(files) != 2 {
+			t.Errorf("expected 2 files, got %d", len(files))
+		}
+	}
+
+	{
+		files, err := fs.ReadDir("*.yaml")
+		if err != nil {
+			t.Fatalf("%v", err)
+		}
+
+		if len(files) != 1 {
+			t.Errorf("expected 1 files, got %d", len(files))
+		}
+	}
+}

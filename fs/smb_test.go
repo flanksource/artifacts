@@ -7,8 +7,8 @@ import (
 )
 
 func TestSMB(t *testing.T) {
-	username := "example1"
-	password := "badpass"
+	username := "foo"
+	password := "pass"
 	share := "users"
 
 	fs, err := NewSMBFS("localhost", "445", share, types.Authentication{
@@ -18,7 +18,7 @@ func TestSMB(t *testing.T) {
 		t.Fatalf("%v", err)
 	}
 
-	if err := populateSMB(fs); err != nil {
+	if err := populateFS(fs); err != nil {
 		t.Fatalf("%v", err)
 	}
 
@@ -43,29 +43,4 @@ func TestSMB(t *testing.T) {
 			t.Errorf("expected 1 files, got %d", len(files))
 		}
 	}
-}
-
-func populateSMB(fs *smbFS) error {
-	testData := []struct {
-		name    string
-		content string
-	}{
-		{"first.json", "first"},
-		{"second.json", "second"},
-		{"third.yaml", "third"},
-	}
-
-	for _, td := range testData {
-		f, err := fs.Create(td.name)
-		if err != nil {
-			return err
-		}
-		defer f.Close()
-
-		if _, err := f.Write([]byte(td.content)); err != nil {
-			return err
-		}
-	}
-
-	return nil
 }
