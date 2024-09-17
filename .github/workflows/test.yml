@@ -11,10 +11,10 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Start smb server
+      - name: Start docker services
         run: |
           cd fs/testdata
-          docker compose up smb -d
+          docker compose up -d
 
       - name: Set up Go
         uses: actions/setup-go@v2
@@ -23,17 +23,6 @@ jobs:
 
       - name: Checkout code
         uses: actions/checkout@v2
-
-      - name: start minio
-        env:
-          MINIO_ROOT_USER: minioadmin
-          MINIO_ROOT_PASSWORD: minioadmin
-          MINIO_ACCESS_KEY: minioadmin
-          MINIO_SECRET_KEY: minioadmin
-        run: |
-          wget -O /tmp/minio -q https://dl.minio.io/server/minio/release/linux-amd64/minio
-          chmod +x /tmp/minio
-          /tmp/minio server /tmp/data &
 
       - name: test
         run: go test -v ./... -cover
