@@ -21,17 +21,17 @@ type gcsFS struct {
 }
 
 func NewGCSFS(ctx context.Context, bucket string, conn connection.GCSConnection) (*gcsFS, error) {
-	cfg, err := gcpUtil.NewSession(ctx, &conn.GCPConnection)
+	client, err := conn.GCPConnection.Client(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	client := gcsFS{
+	fs := gcsFS{
 		Bucket: strings.TrimPrefix(bucket, "gcs://"),
-		Client: cfg,
+		Client: client,
 	}
 
-	return &client, nil
+	return &fs, nil
 }
 
 func (t *gcsFS) Close() error {
