@@ -4,8 +4,10 @@ import (
 	gocontext "context"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 
 	sftpClient "github.com/flanksource/artifacts/clients/sftp"
 	"github.com/pkg/sftp"
@@ -13,6 +15,16 @@ import (
 
 type sshFS struct {
 	*sftp.Client
+	wd string
+}
+
+type sshFileInfo struct {
+	fullpath string
+	fs.FileInfo
+}
+
+func (t *sshFileInfo) FullPath() string {
+	return t.fullpath
 }
 
 func NewSSHFS(host, user, password string) (*sshFS, error) {
@@ -21,14 +33,58 @@ func NewSSHFS(host, user, password string) (*sshFS, error) {
 		return nil, err
 	}
 
+	wd, err := sftpClient.Getwd()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get working directory: %w", err)
+	}
+
 	return &sshFS{
+		wd:     wd,
 		Client: sftpClient,
 	}, nil
 }
 
 func (t *sshFS) ReadDir(name string) ([]FileInfo, error) {
-	// TODO:
-	return nil, nil
+	if strings.Contains(name, "*") {
+		return t.ReadDirGlob(name)
+	}
+
+	files, err := t.Client.ReadDir(name)
+	if err != nil {
+		return nil, err
+	}
+
+	output := make([]FileInfo, 0, len(files))
+	for _, file := range files {
+		base := name
+		if !strings.HasPrefix(name, "/") {
+			base = filepath.Join(t.wd, name)
+		}
+
+		output = append(output, &sshFileInfo{FileInfo: file, fullpath: filepath.Join(base, file.Name())})
+	}
+
+	return output, nil
+}
+
+func (t *sshFS) ReadDirGlob(name string) ([]FileInfo, error) {
+	// TODO: This doesn't fully support doublestar
+	entries, err := t.Client.Glob(name)
+	if err != nil {
+		return nil, err
+	}
+
+	output := make([]FileInfo, 0, len(entries))
+	for _, entry := range entries {
+		info, err := t.Stat(entry)
+		if err != nil {
+			return nil, err
+		}
+
+		output = append(output, &sshFileInfo{FileInfo: info, fullpath: entry})
+	}
+
+	return output, nil
 }
 
 func (s *sshFS) Read(ctx gocontext.Context, path string) (io.ReadCloser, error) {

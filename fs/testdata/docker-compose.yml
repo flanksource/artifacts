@@ -28,3 +28,23 @@ services:
       interval: 30s
       timeout: 20s
       retries: 3
+
+  smb:
+    image: dperson/samba
+    ports:
+      - "445:445"
+    command: >
+      -p
+      -u "foo;pass"
+      -s "public;/share"
+      -s "users;/srv;no;no;no;foo,example2"
+      -s "foo private share;/foo;no;no;no;foo"
+    hostname: samba
+    container_name: samba
+
+  sftp:
+    image: emberstack/sftp
+    ports:
+      - "2222:22"
+    volumes:
+      - ./sftp-configuration.json:/app/config/sftp.json:ro
