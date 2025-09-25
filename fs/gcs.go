@@ -21,7 +21,7 @@ type gcsFS struct {
 }
 
 func NewGCSFS(ctx context.Context, bucket string, conn connection.GCSConnection) (*gcsFS, error) {
-	client, err := conn.GCPConnection.Client(ctx)
+	client, err := conn.Client(ctx)
 	if err != nil {
 		return nil, err
 	}
