@@ -66,7 +66,7 @@ func (t *s3FS) Close() error {
 }
 
 func (t *s3FS) ReadDir(pattern string) ([]FileInfo, error) {
-	prefix, _ := doublestar.SplitPattern(pattern)
+	prefix, glob := doublestar.SplitPattern(pattern)
 	if prefix == "." {
 		prefix = ""
 	}
@@ -80,6 +80,7 @@ func (t *s3FS) ReadDir(pattern string) ([]FileInfo, error) {
 		req.MaxKeys = lo.ToPtr(int32(t.maxObjects))
 	}
 
+	hasGlob := glob != ""
 	var output []FileInfo
 	var numObjectsFetched int
 	for {
@@ -89,7 +90,7 @@ func (t *s3FS) ReadDir(pattern string) ([]FileInfo, error) {
 		}
 
 		for _, obj := range resp.Contents {
-			if pattern != "" {
+			if hasGlob {
 				if matched, err := doublestar.Match(pattern, *obj.Key); err != nil {
 					return nil, err
 				} else if !matched {
