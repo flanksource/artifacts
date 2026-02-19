@@ -45,7 +45,7 @@ type Artifact struct {
 const maxBytesForMimeDetection = 512 * 1024 // 512KB
 
 func SaveArtifact(ctx context.Context, fs artifactFS.FilesystemRW, artifact *models.Artifact, data Artifact) error {
-	defer data.Content.Close()
+	defer func() { _ = data.Content.Close() }()
 
 	checksum := sha256.New()
 	mimeReader := io.TeeReader(data.Content, checksum)
