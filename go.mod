@@ -219,7 +219,7 @@ require (
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/ugorji/go/codec v1.2.12 // indirect
-	github.com/ulikunitz/xz v0.5.12 // indirect
+	github.com/ulikunitz/xz v0.5.14 // indirect
 	github.com/vadimi/go-http-ntlm v1.0.3 // indirect
 	github.com/vadimi/go-http-ntlm/v2 v2.5.0 // indirect
 	github.com/vadimi/go-ntlm v1.2.1 // indirect
