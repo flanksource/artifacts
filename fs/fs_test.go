@@ -73,7 +73,7 @@ func TestFS(t *testing.T) {
 				if err != nil {
 					t.Fatalf("%v", err)
 				}
-				defer file.Close()
+				defer func() { _ = file.Close() }()
 
 				content, err := io.ReadAll(file)
 				if err != nil {

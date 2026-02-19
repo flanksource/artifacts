@@ -37,7 +37,7 @@ func NewS3FS(ctx context.Context, bucket string, conn connection.S3Connection) (
 		return nil, err
 	}
 
-	cfg, err := conn.AWSConnection.Client(ctx)
+	cfg, err := conn.Client(ctx)
 	if err != nil {
 		return nil, err
 	}

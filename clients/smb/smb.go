@@ -53,10 +53,10 @@ func (s *SMBSession) Close() error {
 		_ = s.Conn.Close()
 	}
 	if s.Session != nil {
-		_ = s.Session.Logoff()
+		_ = s.Logoff()
 	}
 	if s.Share != nil {
-		_ = s.Share.Umount()
+		_ = s.Umount()
 	}
 
 	return nil

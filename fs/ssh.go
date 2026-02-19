@@ -69,7 +69,7 @@ func (t *sshFS) ReadDir(name string) ([]FileInfo, error) {
 
 func (t *sshFS) ReadDirGlob(name string) ([]FileInfo, error) {
 	// TODO: This doesn't fully support doublestar
-	entries, err := t.Client.Glob(name)
+	entries, err := t.Glob(name)
 	if err != nil {
 		return nil, err
 	}
@@ -88,18 +88,18 @@ func (t *sshFS) ReadDirGlob(name string) ([]FileInfo, error) {
 }
 
 func (s *sshFS) Read(ctx gocontext.Context, path string) (io.ReadCloser, error) {
-	return s.Client.Open(path)
+	return s.Open(path)
 }
 
 func (s *sshFS) Write(ctx gocontext.Context, path string, data io.Reader) (os.FileInfo, error) {
 	// Ensure the directory exists
 	dir := filepath.Dir(path)
-	err := s.Client.MkdirAll(dir)
+	err := s.MkdirAll(dir)
 	if err != nil {
 		return nil, fmt.Errorf("error creating directory: %w", err)
 	}
 
-	f, err := s.Client.Create(path)
+	f, err := s.Create(path)
 	if err != nil {
 		return nil, fmt.Errorf("error creating file: %w", err)
 	}

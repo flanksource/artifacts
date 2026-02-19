@@ -25,7 +25,7 @@ type SMBFileInfo struct {
 }
 
 func (t *SMBFileInfo) FullPath() string {
-	return path.Join(t.Base, t.FileInfo.Name())
+	return path.Join(t.Base, t.Name())
 }
 
 func NewSMBFS(server string, port, share string, auth types.Authentication) (*smbFS, error) {
@@ -42,11 +42,11 @@ func NewSMBFS(server string, port, share string, auth types.Authentication) (*sm
 }
 
 func (s *smbFS) Read(ctx gocontext.Context, path string) (io.ReadCloser, error) {
-	return s.SMBSession.Share.Open(path)
+	return s.Open(path)
 }
 
 func (s *smbFS) Write(ctx gocontext.Context, path string, data io.Reader) (os.FileInfo, error) {
-	f, err := s.SMBSession.Share.Create(path)
+	f, err := s.Create(path)
 	if err != nil {
 		return nil, err
 	}
