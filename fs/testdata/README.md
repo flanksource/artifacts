@@ -112,10 +112,8 @@ If ports are already in use, you can modify the port mappings in `docker-compose
 
 ## CI/CD Integration
 
-The GitHub Actions workflow automatically:
-1. Starts Docker Compose services
-2. Waits for services to be healthy
+The GitHub Actions workflow in `.github/workflows/test.yml` automatically:
+1. Starts Docker Compose services (including LocalStack and MinIO)
+2. Waits for services to be healthy  
 3. Runs all tests including E2E tests
 4. Stops services and cleans up
-
-See `.github/workflows/test.yml` for the CI configuration.
