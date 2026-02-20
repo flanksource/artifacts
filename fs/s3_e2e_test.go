@@ -29,16 +29,16 @@ func TestS3E2E_ContentLength(t *testing.T) {
 
 	// Test with LocalStack
 	t.Run("LocalStack", func(t *testing.T) {
-		testS3ContentLength(t, ctx, "http://localhost:4566", "test", "us-east-1")
+		testS3ContentLength(t, ctx, "http://localhost:4566", "test", "us-east-1", "test", "test")
 	})
 
 	// Test with MinIO as well for compatibility
 	t.Run("MinIO", func(t *testing.T) {
-		testS3ContentLength(t, ctx, "http://localhost:9000", "test", "us-east-1")
+		testS3ContentLength(t, ctx, "http://localhost:9000", "test", "us-east-1", "minioadmin", "minioadmin")
 	})
 }
 
-func testS3ContentLength(t *testing.T, ctx context.Context, endpoint, bucket, region string) {
+func testS3ContentLength(t *testing.T, ctx context.Context, endpoint, bucket, region, accessKey, secretKey string) {
 	t.Helper()
 
 	// Create S3 filesystem client
@@ -46,8 +46,8 @@ func testS3ContentLength(t *testing.T, ctx context.Context, endpoint, bucket, re
 		Bucket:       bucket,
 		UsePathStyle: true,
 		AWSConnection: connection.AWSConnection{
-			AccessKey:     types.EnvVar{ValueStatic: "test"},
-			SecretKey:     types.EnvVar{ValueStatic: "test"},
+			AccessKey:     types.EnvVar{ValueStatic: accessKey},
+			SecretKey:     types.EnvVar{ValueStatic: secretKey},
 			Region:        region,
 			Endpoint:      endpoint,
 			SkipTLSVerify: true,
