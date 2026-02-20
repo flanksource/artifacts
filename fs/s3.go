@@ -1,6 +1,7 @@
 package fs
 
 import (
+	"bytes"
 	gocontext "context"
 	"io"
 	"io/fs"
@@ -151,10 +152,19 @@ func (t *s3FS) Read(ctx gocontext.Context, key string) (io.ReadCloser, error) {
 }
 
 func (t *s3FS) Write(ctx gocontext.Context, path string, data io.Reader) (os.FileInfo, error) {
-	_, err := t.Client.PutObject(ctx, &s3.PutObjectInput{
-		Bucket: aws.String(t.Bucket),
-		Key:    aws.String(path),
-		Body:   data,
+	// Read all data into memory to get the content length
+	// This is required because S3 PutObject requires Content-Length header
+	content, err := io.ReadAll(data)
+	if err != nil {
+		return nil, err
+	}
+
+	contentLength := int64(len(content))
+	_, err = t.Client.PutObject(ctx, &s3.PutObjectInput{
+		Bucket:        aws.String(t.Bucket),
+		Key:           aws.String(path),
+		Body:          bytes.NewReader(content),
+		ContentLength: &contentLength,
 	})
 
 	if err != nil {
