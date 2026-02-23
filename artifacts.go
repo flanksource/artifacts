@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
+	"os"
 
 	artifactFS "github.com/flanksource/artifacts/fs"
 	"github.com/flanksource/duty/context"
@@ -36,10 +37,60 @@ func (t *MIMEWriter) Detect() *mimetype.MIME {
 	return mimetype.Detect(t.buffer)
 }
 
+// readerWithLength wraps an io.Reader and carries content length information
+type readerWithLength struct {
+	reader io.Reader
+	length int64
+}
+
+func (r *readerWithLength) Read(p []byte) (n int, err error) {
+	return r.reader.Read(p)
+}
+
+// ContentLength returns the content length if known, -1 otherwise
+func (r *readerWithLength) ContentLength() int64 {
+	return r.length
+}
+
+// determineContentLength attempts to determine the content length from the reader
+// using type assertions and heuristics
+func determineContentLength(r io.Reader) int64 {
+	// Try common interfaces that provide size information
+	switch v := r.(type) {
+	case interface{ Len() int }:
+		return int64(v.Len())
+	case interface{ Size() int64 }:
+		return v.Size()
+	case *os.File:
+		if stat, err := v.Stat(); err == nil {
+			return stat.Size()
+		}
+	}
+
+	// Check if it's a bytes.Reader or strings.Reader
+	if seeker, ok := r.(io.Seeker); ok {
+		// Get current position
+		current, err := seeker.Seek(0, io.SeekCurrent)
+		if err == nil {
+			// Seek to end to get size
+			end, err := seeker.Seek(0, io.SeekEnd)
+			if err == nil {
+				// Restore original position
+				_, _ = seeker.Seek(current, io.SeekStart)
+				return end - current
+			}
+		}
+	}
+
+	// Unknown length
+	return -1
+}
+
 type Artifact struct {
-	ContentType string
-	Path        string
-	Content     io.ReadCloser
+	ContentType   string
+	Path          string
+	Content       io.ReadCloser
+	ContentLength int64 // Optional: content length if known, -1 if unknown
 }
 
 const maxBytesForMimeDetection = 512 * 1024 // 512KB
@@ -47,13 +98,24 @@ const maxBytesForMimeDetection = 512 * 1024 // 512KB
 func SaveArtifact(ctx context.Context, fs artifactFS.FilesystemRW, artifact *models.Artifact, data Artifact) error {
 	defer func() { _ = data.Content.Close() }()
 
+	// Determine content length if not already provided
+	if data.ContentLength < 0 {
+		data.ContentLength = determineContentLength(data.Content)
+	}
+
 	checksum := sha256.New()
 	mimeReader := io.TeeReader(data.Content, checksum)
 
 	mimeWriter := &MIMEWriter{Max: maxBytesForMimeDetection}
 	fileReader := io.TeeReader(mimeReader, mimeWriter)
 
-	info, err := fs.Write(ctx, data.Path, fileReader)
+	// Create a reader wrapper that carries the content length
+	wrappedReader := &readerWithLength{
+		reader: fileReader,
+		length: data.ContentLength,
+	}
+
+	info, err := fs.Write(ctx, data.Path, wrappedReader)
 	if err != nil {
 		return fmt.Errorf("error writing artifact(%s): %w", data.Path, err)
 	}
