@@ -1,11 +1,7 @@
 package fs
 
 import (
-	"bytes"
 	gocontext "context"
-	"encoding/base64"
-	"encoding/binary"
-	"hash/crc32"
 	"io"
 	"io/fs"
 	"os"
@@ -13,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	s3Types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/bmatcuk/doublestar/v4"
@@ -155,29 +152,16 @@ func (t *s3FS) Read(ctx gocontext.Context, key string) (io.ReadCloser, error) {
 }
 
 func (t *s3FS) Write(ctx gocontext.Context, path string, data io.Reader) (os.FileInfo, error) {
-	content, err := io.ReadAll(data)
-	if err != nil {
-		return nil, err
-	}
-	contentLength := int64(len(content))
-
-	// Pre-compute the CRC32 checksum from the buffered content and supply it
-	// directly to the SDK. This avoids the SDK needing to read (and thereby
-	// exhausting) the body reader a second time to compute the checksum, which
-	// was the root cause of "BadDigest: CRC32 mismatch" errors when using
-	// non-seekable readers (e.g. TeeReader chains).
-	crc32Sum := crc32.ChecksumIEEE(content)
-	var crc32Bytes [4]byte
-	binary.BigEndian.PutUint32(crc32Bytes[:], crc32Sum)
-	checksumCRC32 := base64.StdEncoding.EncodeToString(crc32Bytes[:])
-
-	_, err = t.Client.PutObject(ctx, &s3.PutObjectInput{
-		Bucket:            aws.String(t.Bucket),
-		Key:               aws.String(path),
-		Body:              bytes.NewReader(content),
-		ContentLength:     &contentLength,
-		ChecksumAlgorithm: s3Types.ChecksumAlgorithmCrc32,
-		ChecksumCRC32:     aws.String(checksumCRC32),
+	// manager.NewUploader handles unseekable streaming readers (e.g. TeeReader
+	// chains) by buffering parts internally, computing the required checksums,
+	// and setting Content-Length automatically — all without the caller needing
+	// to buffer or pre-compute checksums manually.
+	// See: https://docs.aws.amazon.com/sdk-for-go/v2/developer-guide/sdk-utilities-s3.html#unseekable-streaming-input
+	uploader := manager.NewUploader(t.Client)
+	_, err := uploader.Upload(ctx, &s3.PutObjectInput{
+		Bucket: aws.String(t.Bucket),
+		Key:    aws.String(path),
+		Body:   data,
 	})
 	if err != nil {
 		return nil, err

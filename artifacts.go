@@ -40,7 +40,7 @@ type Artifact struct {
 	ContentType   string
 	Path          string
 	Content       io.ReadCloser
-	ContentLength int64 // Deprecated: no longer used; content length is always determined by buffering
+	ContentLength int64 // Deprecated: no longer used; the upload manager determines content length automatically
 }
 
 const maxBytesForMimeDetection = 512 * 1024 // 512KB
@@ -54,8 +54,8 @@ func SaveArtifact(ctx context.Context, fs artifactFS.FilesystemRW, artifact *mod
 	mimeWriter := &MIMEWriter{Max: maxBytesForMimeDetection}
 	fileReader := io.TeeReader(mimeReader, mimeWriter)
 
-	// fileReader is the head of a TeeReader chain:
-	//   data.Content → checksum (sha256) → mimeWriter → fileReader
+	// fileReader is the outermost reader in a TeeReader chain:
+	//   fileReader (outermost) ← mimeWriter ← checksum (sha256) ← data.Content
 	// When any filesystem Write implementation reads from fileReader, all bytes
 	// flow through the chain, populating both checksum and mimeWriter in one pass.
 	info, err := fs.Write(ctx, data.Path, fileReader)
