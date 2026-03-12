@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/flanksource/duty/connection"
 	"github.com/flanksource/duty/context"
 	"github.com/flanksource/duty/types"
@@ -236,4 +237,16 @@ func (w *testWriter) Write(p []byte) (n int, err error) {
 	}
 	*w.buffer = append(*w.buffer, p[:remaining]...)
 	return len(p), nil
+}
+
+// createBucket creates an S3 bucket if it doesn't exist
+func createBucket(t *testing.T, client *s3.Client, bucket string) {
+	t.Helper()
+
+	_, err := client.CreateBucket(gocontext.Background(), &s3.CreateBucketInput{
+		Bucket: &bucket,
+	})
+	if err != nil {
+		t.Fatalf("failed to create bucket: %v", err)
+	}
 }
