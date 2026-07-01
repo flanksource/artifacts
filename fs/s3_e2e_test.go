@@ -41,6 +41,10 @@ func TestS3E2E_ContentLength(t *testing.T) {
 func testS3ContentLength(t *testing.T, ctx context.Context, endpoint, bucket, region, accessKey, secretKey string) {
 	t.Helper()
 
+	if address, ok := endpointAddress(endpoint); !ok || !isTCPAvailable(address) {
+		t.Skipf("skipping S3 E2E test: %s is unavailable", endpoint)
+	}
+
 	// Create S3 filesystem client
 	s3FS, err := NewS3FS(ctx, bucket, connection.S3Connection{
 		Bucket:       bucket,
@@ -56,7 +60,7 @@ func testS3ContentLength(t *testing.T, ctx context.Context, endpoint, bucket, re
 	if err != nil {
 		t.Fatalf("failed to create S3 filesystem: %v", err)
 	}
-	defer s3FS.Close()
+	defer closeWithError(t, s3FS)
 
 	// Create bucket if it doesn't exist
 	createBucket(t, s3FS.Client, bucket)
@@ -80,7 +84,7 @@ func testS3ContentLength(t *testing.T, ctx context.Context, endpoint, bucket, re
 		if err != nil {
 			t.Fatalf("failed to read from S3: %v", err)
 		}
-		defer reader.Close()
+		defer closeWithError(t, reader)
 
 		readContent, err := io.ReadAll(reader)
 		if err != nil {
@@ -125,7 +129,7 @@ func testS3ContentLength(t *testing.T, ctx context.Context, endpoint, bucket, re
 		if err != nil {
 			t.Fatalf("failed to read from S3: %v", err)
 		}
-		defer reader.Close()
+		defer closeWithError(t, reader)
 
 		readContent, err := io.ReadAll(reader)
 		if err != nil {
@@ -174,7 +178,7 @@ func testS3ContentLength(t *testing.T, ctx context.Context, endpoint, bucket, re
 		if err != nil {
 			t.Fatalf("failed to read from S3: %v", err)
 		}
-		defer reader.Close()
+		defer closeWithError(t, reader)
 
 		readContent, err := io.ReadAll(reader)
 		if err != nil {
@@ -206,7 +210,7 @@ func testS3ContentLength(t *testing.T, ctx context.Context, endpoint, bucket, re
 		if err != nil {
 			t.Fatalf("failed to read from S3: %v", err)
 		}
-		defer reader.Close()
+		defer closeWithError(t, reader)
 
 		readContent, err := io.ReadAll(reader)
 		if err != nil {
@@ -217,6 +221,13 @@ func testS3ContentLength(t *testing.T, ctx context.Context, endpoint, bucket, re
 			t.Errorf("size mismatch: expected %d, got %d", len(content), len(readContent))
 		}
 	})
+}
+
+func closeWithError(t *testing.T, closer io.Closer) {
+	t.Helper()
+	if err := closer.Close(); err != nil {
+		t.Errorf("failed to close: %v", err)
+	}
 }
 
 // testWriter is a simple writer that buffers up to max bytes for testing
