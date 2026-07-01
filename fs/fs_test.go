@@ -5,7 +5,11 @@ import (
 	"errors"
 	"flag"
 	"io"
+	"net"
+	"net/url"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -153,54 +157,114 @@ type testData struct {
 func getTestClients(t *testing.T, ctx context.Context) []testData {
 	t.Helper()
 
-	gcsFS, err := NewGCSFS(ctx, "test", connection.GCSConnection{
-		GCPConnection: connection.GCPConnection{
-			SkipTLSVerify: true,
-			Endpoint:      "https://localhost:4443/storage/v1/",
-		},
-	})
-	if err != nil {
-		t.Fatalf("failed to create GCS filesystem: %v", err)
-	}
-	createGSCBucket(t, ctx, gcsFS.Client, "fkae-project", "test")
+	testClients := []testData{{"local", NewLocalFS(t.TempDir())}}
 
-	sshfs, err := NewSSHFS("localhost:2222", "foo", "pass")
-	if err != nil {
-		t.Fatalf("%v", err)
-	}
-
-	smbFS, err := NewSMBFS("localhost", "445", "users", types.Authentication{
-		Username: types.EnvVar{ValueStatic: "foo"},
-		Password: types.EnvVar{ValueStatic: "pass"}})
-	if err != nil {
-		t.Fatalf("%v", err)
+	if isTCPAvailable("localhost:4443") {
+		gcsFS, err := NewGCSFS(ctx, "test", connection.GCSConnection{
+			GCPConnection: connection.GCPConnection{
+				SkipTLSVerify: true,
+				Endpoint:      "https://localhost:4443/storage/v1/",
+			},
+		})
+		if err != nil {
+			t.Fatalf("failed to create GCS filesystem: %v", err)
+		}
+		createGSCBucket(t, ctx, gcsFS.Client, "fkae-project", "test")
+		testClients = append(testClients, testData{"gcsFS", gcsFS})
+	} else {
+		t.Log("skipping gcsFS: localhost:4443 is unavailable")
 	}
 
-	s3FS, err := NewS3FS(ctx, *bucket, connection.S3Connection{
-		Bucket:       *bucket,
-		UsePathStyle: true,
-		AWSConnection: connection.AWSConnection{
-			AccessKey:     types.EnvVar{ValueStatic: accessKeyID},
-			SecretKey:     types.EnvVar{ValueStatic: secretKey},
-			Region:        region,
-			Endpoint:      *endpoint,
-			SkipTLSVerify: *skipVerify,
-		},
-	})
-	if err != nil {
-		t.Fatal(err)
+	if isTCPAvailable("localhost:2222") {
+		if configureSFTPTestKnownHosts(t, "localhost:2222") {
+			sshfs, err := NewSSHFS("localhost:2222", "foo", "pass")
+			if err != nil {
+				t.Fatalf("%v", err)
+			}
+			testClients = append(testClients, testData{"sshfs", sshfs})
+		}
+	} else {
+		t.Log("skipping sshfs: localhost:2222 is unavailable")
 	}
-	createBucket(t, s3FS.Client, *bucket)
 
-	testClients := []testData{
-		{"gcsFS", gcsFS},
-		{"sshfs", sshfs},
-		{"smbfs", smbFS},
-		{"s3FS", s3FS},
-		{"local", NewLocalFS(t.TempDir())},
+	if isTCPAvailable("localhost:445") {
+		smbFS, err := NewSMBFS("localhost", "445", "users", types.Authentication{
+			Username: types.EnvVar{ValueStatic: "foo"},
+			Password: types.EnvVar{ValueStatic: "pass"}})
+		if err != nil {
+			t.Fatalf("%v", err)
+		}
+		testClients = append(testClients, testData{"smbfs", smbFS})
+	} else {
+		t.Log("skipping smbfs: localhost:445 is unavailable")
+	}
+
+	if s3Address, ok := endpointAddress(*endpoint); ok && isTCPAvailable(s3Address) {
+		s3FS, err := NewS3FS(ctx, *bucket, connection.S3Connection{
+			Bucket:       *bucket,
+			UsePathStyle: true,
+			AWSConnection: connection.AWSConnection{
+				AccessKey:     types.EnvVar{ValueStatic: accessKeyID},
+				SecretKey:     types.EnvVar{ValueStatic: secretKey},
+				Region:        region,
+				Endpoint:      *endpoint,
+				SkipTLSVerify: *skipVerify,
+			},
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		createBucket(t, s3FS.Client, *bucket)
+		testClients = append(testClients, testData{"s3FS", s3FS})
+	} else {
+		t.Logf("skipping s3FS: %s is unavailable", *endpoint)
 	}
 
 	return testClients
+}
+
+func configureSFTPTestKnownHosts(t *testing.T, address string) bool {
+	t.Helper()
+
+	host, port, err := net.SplitHostPort(address)
+	if err != nil {
+		t.Fatalf("invalid SFTP test address %q: %v", address, err)
+	}
+
+	knownHosts, err := exec.Command("ssh-keyscan", "-p", port, host).Output()
+	if err != nil || len(knownHosts) == 0 {
+		t.Logf("skipping sshfs: failed to scan host key for %s: %v", address, err)
+		return false
+	}
+
+	homeDir := t.TempDir()
+	sshDir := filepath.Join(homeDir, ".ssh")
+	if err := os.MkdirAll(sshDir, 0700); err != nil {
+		t.Fatalf("failed to create test .ssh directory: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(sshDir, "known_hosts"), knownHosts, 0600); err != nil {
+		t.Fatalf("failed to write test known_hosts: %v", err)
+	}
+	t.Setenv("HOME", homeDir)
+
+	return true
+}
+
+func isTCPAvailable(address string) bool {
+	conn, err := net.DialTimeout("tcp", address, time.Second)
+	if err != nil {
+		return false
+	}
+	_ = conn.Close()
+	return true
+}
+
+func endpointAddress(endpoint string) (string, bool) {
+	u, err := url.Parse(endpoint)
+	if err != nil || u.Host == "" {
+		return "", false
+	}
+	return u.Host, true
 }
 
 func createBucket(t *testing.T, cl *s3.Client, bucket string) {

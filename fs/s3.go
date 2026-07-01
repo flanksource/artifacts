@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
+	"github.com/aws/aws-sdk-go-v2/feature/s3/transfermanager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	s3Types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/bmatcuk/doublestar/v4"
@@ -152,13 +152,13 @@ func (t *s3FS) Read(ctx gocontext.Context, key string) (io.ReadCloser, error) {
 }
 
 func (t *s3FS) Write(ctx gocontext.Context, path string, data io.Reader) (os.FileInfo, error) {
-	// manager.NewUploader handles unseekable streaming readers (e.g. TeeReader
+	// transfermanager handles unseekable streaming readers (e.g. TeeReader
 	// chains) by buffering parts internally, computing the required checksums,
 	// and setting Content-Length automatically — all without the caller needing
 	// to buffer or pre-compute checksums manually.
 	// See: https://docs.aws.amazon.com/sdk-for-go/v2/developer-guide/sdk-utilities-s3.html#unseekable-streaming-input
-	uploader := manager.NewUploader(t.Client)
-	_, err := uploader.Upload(ctx, &s3.PutObjectInput{
+	uploader := transfermanager.New(t.Client)
+	_, err := uploader.UploadObject(ctx, &transfermanager.UploadObjectInput{
 		Bucket: aws.String(t.Bucket),
 		Key:    aws.String(path),
 		Body:   data,
